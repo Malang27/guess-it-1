@@ -8,74 +8,99 @@ import (
 	"strconv"
 )
 
+// Constantes utilisées dans le programme
+const (
+	initialWindowSize = 10
+	stdDevMultiplier  = 1.28
+)
+
 func main() {
 	var numbers []float64
-	debut := 0
-	fin := 0
+	var isFirstIteration = true
+
+	// Scanner pour lire depuis l'entrée standard
 	reader := bufio.NewScanner(os.Stdin)
 	for reader.Scan() {
-		nbr, _ := strconv.Atoi(reader.Text())
-		numbers = append(numbers, float64(nbr))
-		if len(numbers) <= 10 {
-			debut = int(nbr) - 100
-			fin = int(nbr) + 100
-		} else {
-			average := Average(numbers)
-			stand_dev := Standard_Dev(numbers)
-			debut = Round(average - 1.28*stand_dev)
-			fin = Round(average + 1.28*stand_dev)
+		// Convertir l'entrée en un nombre entier
+		nbr, err := strconv.Atoi(reader.Text())
+		if err != nil {
+			fmt.Println("Entrée non valide. Veuillez entrer un entier valide.")
+			continue
 		}
+
+		// Ajouter le nombre à la liste des nombres
+		numbers = append(numbers, float64(nbr))
+		var debut, fin int
+
+		// Vérifier s'il s'agit de la première itération
+		if isFirstIteration {
+			// Définir la fenêtre initiale
+			debut = nbr - 100
+			fin = nbr + 100
+			isFirstIteration = false
+		} else {
+			// Calculer la moyenne et l'écart type
+			average := average(numbers)
+			standDev := standardDeviation(numbers)
+			// Calculer la nouvelle fenêtre en fonction de la moyenne et de l'écart type
+			debut = round(average - stdDevMultiplier*standDev)
+			fin = round(average + stdDevMultiplier*standDev)
+		}
+
+		// Afficher la plage calculée
 		fmt.Printf("%d %d\n", debut, fin)
-
 	}
+}
 
+// Calculer la moyenne d'un tableau de nombres
+func average(tab []float64) float64 {
+	somme := sum(tab)
+	return somme / float64(len(tab))
 }
-func Average(tab []float64) float64 {
-	somme := Sum(tab)
-	Average := somme / float64(len(tab))
-	return Average
-}
-func Sum(tab []float64) float64 {
+
+// Calculer la somme d'un tableau de nombres
+func sum(tab []float64) float64 {
 	sum := 0.0
-
 	for i := 0; i < len(tab); i++ {
 		dif := 0.0
+		// Calculer la différence entre les éléments successifs
 		if i > 0 {
 			dif = tab[i] - tab[i-1]
 		}
+		// Ajouter l'élément à la somme si la différence est dans la plage spécifiée
 		if dif < 10000.0 && dif > -10000.0 {
 			sum += tab[i]
-
-		} /*  else {
-			sum += tab[0]
-		} */
+		}
 	}
 	return sum
 }
-func Variance(tab []float64) float64 {
-	sum_des_dif := 0.0
-	moyenne := Average(tab)
+
+// Calculer la variance d'un tableau de nombres
+func variance(tab []float64) float64 {
+	sumDesDif := 0.0
+	moyenne := average(tab)
 
 	for _, val := range tab {
 		n := val - moyenne
+		// Ajouter la différence au carré à la somme si elle est dans la plage spécifiée
 		if n < 10000.0 && n > -10000.0 {
-			sum_des_dif += math.Pow(n, 2)
-
+			sumDesDif += math.Pow(n, 2)
 		}
 	}
-	variance := sum_des_dif / float64(len(tab))
-	return variance
+	return sumDesDif / float64(len(tab))
 }
-func Standard_Dev(tab []float64) float64 {
-	vari := Variance(tab)
+
+// Calculer l'écart type d'un tableau de nombres
+func standardDeviation(tab []float64) float64 {
+	vari := variance(tab)
 	return math.Sqrt(vari)
 }
-func Round(val float64) int {
+
+// Arrondir un nombre flottant à l'entier le plus proche
+func round(val float64) int {
 	decimal := math.Mod(val, 1)
 	if decimal <= 0.5 {
 		return int(val - decimal)
-	} else {
-		return int(val - decimal + 1)
 	}
-
+	return int(val - decimal + 1)
 }
